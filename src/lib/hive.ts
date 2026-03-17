@@ -43,7 +43,14 @@ export async function detectImageFromBuffer(
     body: formData,
   });
 
-  if (!res.ok) throw new Error(`Hive API error: ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    console.error(`Hive buffer upload error ${res.status}:`, body);
+    if (res.status === 401 || res.status === 403) {
+      throw new Error("Image analysis is unavailable (invalid API key). Check HIVE_API_KEY in your environment variables.");
+    }
+    throw new Error(`Hive API error: ${res.status}`);
+  }
   return parseHiveResponse(await res.json());
 }
 
