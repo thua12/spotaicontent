@@ -19,6 +19,9 @@ export async function detectImageFromUrl(imageUrl: string): Promise<HiveResult> 
     body: JSON.stringify({ url: imageUrl }),
   });
 
+  if (res.status === 403 || res.status === 401) {
+    throw new Error("This image URL is blocking external access. Please download the image and upload it directly instead.");
+  }
   if (!res.ok) throw new Error(`Hive API error: ${res.status}`);
   return parseHiveResponse(await res.json());
 }
