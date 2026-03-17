@@ -40,7 +40,7 @@ export default function AboutPage() {
             {
               icon: <ShieldCheck className="w-6 h-6" />,
               title: "A badge anyone can verify",
-              body: "After analysis, content creators get a cryptographically signed badge they can embed anywhere — a YouTube description, a blog footer, a Twitter bio. Anyone who sees the badge can verify it in one click, with no account required. The signature can't be forged or copied to other content.",
+              body: "After analysis, content creators get a cryptographically signed badge they can embed anywhere — a YouTube description, a blog footer, a Twitter bio. Anyone who sees the badge can verify it in one click. The signature can't be forged or copied to other content.",
               color: "#2D6A4F",
             },
             {
@@ -66,14 +66,23 @@ export default function AboutPage() {
         </div>
 
         <div className="bg-card border border-border-warm rounded-card p-8 shadow-card text-center">
-          <h2 className="font-serif text-2xl font-semibold text-navy mb-3">Try it yourself</h2>
-          <p className="text-grey mb-6">Free. No account. No verdict — just a score.</p>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-btn bg-navy text-white font-semibold hover:bg-navy-light transition-colors"
-          >
-            Analyze Content →
-          </Link>
+          <h2 className="font-serif text-2xl font-semibold text-navy mb-3">Get started</h2>
+          <p className="text-grey mb-2">Create a free account to start checking content.</p>
+          <p className="text-sm text-grey/70 mb-6">3 free checks included · Upgrade for more</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              href="/api/auth/signin"
+              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-btn bg-navy text-white font-semibold hover:bg-navy-light transition-colors"
+            >
+              Create Account →
+            </Link>
+            <Link
+              href="/feed"
+              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-btn border border-border-warm text-navy font-semibold hover:bg-highlight/50 transition-colors"
+            >
+              Browse the feed
+            </Link>
+          </div>
         </div>
       </div>
     </div>
