@@ -1,5 +1,4 @@
 import NextAuth from "next-auth";
-import Facebook from "next-auth/providers/facebook";
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/db";
@@ -10,10 +9,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_ID ?? "",
       clientSecret: process.env.GOOGLE_SECRET ?? "",
-    }),
-    Facebook({
-      clientId: process.env.FACEBOOK_ID ?? "",
-      clientSecret: process.env.FACEBOOK_SECRET ?? "",
     }),
   ],
   callbacks: {

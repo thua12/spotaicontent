@@ -171,6 +171,17 @@ export async function POST(req: NextRequest) {
       } else {
         // image URL
         validateUrl(body.url);
+        const imageHostname = new URL(body.url).hostname.replace("www.", "");
+        const blockedImagePlatforms: Record<string, string> = {
+          "instagram.com": "Instagram",
+          "twitter.com": "Twitter/X",
+          "x.com": "Twitter/X",
+          "facebook.com": "Facebook",
+          "tiktok.com": "TikTok",
+        };
+        if (blockedImagePlatforms[imageHostname]) {
+          throw new Error(`${blockedImagePlatforms[imageHostname]} blocks direct image access. Please download the image and upload it directly instead.`);
+        }
         url = body.url;
         excerpt = url;
         const result = await detectImageFromUrl(url!);
