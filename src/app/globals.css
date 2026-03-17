@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  --paper:       #FDFAF5;
+  --card:        #FFFFFF;
+  --navy:        #1A1A2E;
+  --grey:        #6B7280;
+  --human:       #2D6A4F;
+  --middle:      #F4A261;
+  --ai:          #E63946;
+  --highlight:   #FFE8C8;
+  --border-warm: #E8E0D5;
+}
+
+* { box-sizing: border-box; padding: 0; margin: 0; }
+
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background-color: var(--paper);
+  color: var(--navy);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* Spectrum gradient */
+.spectrum-bar {
+  background: linear-gradient(to right, #E63946, #F4A261, #2D6A4F);
+  border-radius: 999px;
+}
+
+/* Card styles */
+.warm-card {
+  background: var(--card);
+  border: 1px solid var(--border-warm);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(26,26,46,0.08);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.warm-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(26,26,46,0.14);
+}
+
+/* Spectrum section colors */
+.section-header-contested   { color: #F4A261; }
+.section-header-news        { color: #1A1A2E; }
+.section-header-entertainment { color: #6B4E71; }
+.section-header-viral       { color: #E07A5F; }
+.section-header-food        { color: #6B9E78; }
+.section-header-business    { color: #4A6FA5; }
+.section-header-academic    { color: #2D6A4F; }
+.section-header-creative    { color: #C17B74; }
+.section-header-health      { color: #5B9E9E; }
+.section-header-general     { color: #1A1A2E; }
+
+/* Warm scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--paper); }
+::-webkit-scrollbar-thumb { background: var(--border-warm); border-radius: 2px; }
+
+/* Drag-over state */
+.drag-over {
+  border-color: var(--human) !important;
+  background: rgba(45,106,79,0.05) !important;
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .font-serif   { font-family: 'Fraunces', Georgia, serif; }
+  .font-mono    { font-family: 'DM Mono', monospace; }
+}

@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String   @id @default(cuid())
+  name             String?
+  email            String?  @unique
+  image            String?
+  role             String   @default("USER") // USER | EXPERT | ADMIN
+  stripeCustomerId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  content    Content[]
+  votes      Vote[]
+  comments   Comment[]
+  accounts   Account[]
+  sessions   Session[]
+  trustScore TrustScore?
+  apiKeys    ApiKey[]
+
+  checksThisMonth  Int      @default(0)
+  lastCheckReset   DateTime @default(now())
+}
+
+model AnonymousCheck {
+  id        String   @id @default(cuid())
+  ip        String
+  date      String   // YYYY-MM-DD
+  count     Int      @default(0)
+
+  @@unique([ip, date])
+}
+
+model ApiKey {
+  id             String   @id @default(cuid())
+  userId         String
+  key            String   @unique
+  tier           String   @default("free")   // free | developer | publisher
+  callsThisMonth Int      @default(0)
+  totalCalls     Int      @default(0)
+  lastResetAt    DateTime @default(now())
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Content {
+  id             String   @id @default(cuid())
+  contentType    String   // image | video | text
+  url            String?
+  filename       String?
+  excerpt        String?  // first 300 chars of text, or URL for display
+  algorithmScore Int      // 1–99, AI probability (low = human, high = AI)
+  sentences      String?  // JSON: [{sentence, generated_prob}]
+  voteCount      Int      @default(0)
+  communityScore Float?   // null until 10+ votes; average of vote scores
+  submittedById  String?
+  section        String?  @default("general")
+  displayScore   Float?   // ranking score for homepage (freshness + ambiguity + vote gap)
+  contentHash    String?  // first 200 chars hashed for dedup (not @unique — allow null dups)
+  wordCount      Int?     // word count of analyzed content
+  autoImported   Boolean  @default(false) // true if pulled by ContentPullJob
+  createdAt      DateTime @default(now())
+
+  submittedBy User?     @relation(fields: [submittedById], references: [id])
+  votes       Vote[]
+  comments    Comment[]
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  contentId String
+  userId    String
+  score     Int      // 1–99 on spectrum
+  verdict   String   // HUMAN | UNDECIDED | AI
+  createdAt DateTime @default(now())
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, userId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  contentId String
+  userId    String
+  body      String
+  createdAt DateTime @default(now())
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// NextAuth required models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model TrustScore {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  score      Int      @default(50)  // 0-100
+  accountAge Int      @default(0)   // days
+  voteCount  Int      @default(0)
+  accuracy   Float    @default(0.5) // 0-1, how often community agrees with user
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

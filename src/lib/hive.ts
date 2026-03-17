@@ -1,0 +1,55 @@
+const HIVE_BASE_URL = "https://api.thehive.ai/api/v2/task/sync";
+
+export interface HiveResult {
+  aiScore: number;
+  humanScore: number;
+  classes: Array<{ class: string; score: number }>;
+}
+
+export async function detectImageFromUrl(imageUrl: string): Promise<HiveResult> {
+  const key = process.env.HIVE_API_KEY;
+  if (!key) throw new Error("HIVE_API_KEY is not configured");
+
+  const res = await fetch(HIVE_BASE_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Token ${key}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ url: imageUrl }),
+  });
+
+  if (!res.ok) throw new Error(`Hive API error: ${res.status}`);
+  return parseHiveResponse(await res.json());
+}
+
+export async function detectImageFromBuffer(
+  buffer: ArrayBuffer,
+  filename: string,
+  mimeType: string
+): Promise<HiveResult> {
+  const key = process.env.HIVE_API_KEY;
+  if (!key) throw new Error("HIVE_API_KEY is not configured");
+
+  const formData = new FormData();
+  formData.append("image", new Blob([buffer], { type: mimeType }), filename);
+
+  const res = await fetch(HIVE_BASE_URL, {
+    method: "POST",
+    headers: { Authorization: `Token ${key}` },
+    body: formData,
+  });
+
+  if (!res.ok) throw new Error(`Hive API error: ${res.status}`);
+  return parseHiveResponse(await res.json());
+}
+
+function parseHiveResponse(data: Record<string, unknown>): HiveResult {
+  const status = data?.status as Array<{ response?: { output?: Array<{ classes?: Array<{ class: string; score: number }> }> } }>;
+  const classes = status?.[0]?.response?.output?.[0]?.classes ?? [];
+  const aiClass = classes.find((c) => c.class === "ai_generated");
+  const humanClass = classes.find((c) => c.class === "not_ai_generated");
+  const aiScore = aiClass?.score ?? 0;
+  const humanScore = humanClass?.score ?? 1 - aiScore;
+  return { aiScore, humanScore, classes };
+}
