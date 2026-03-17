@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { clamp } from "@/lib/scoring";
 import { detectImageFromUrl, detectImageFromBuffer } from "@/lib/hive";
 import { auth } from "@/auth";
-import { consumeAnonymousCheck, consumeUserCheck } from "@/lib/check-limit";
+import { consumeUserCheck } from "@/lib/check-limit";
 import { validateUrl } from "@/lib/validate-url";
 
 const VALID_SECTIONS = new Set(["general","news","entertainment","viral","food","business","academic","creative","health"]);
@@ -191,39 +191,7 @@ export async function POST(req: NextRequest) {
         }
         url = body.url;
         excerpt = url;
-        // Video detection via Hive async
-        const key = process.env.HIVE_API_KEY;
-        if (!key) throw new Error("HIVE_API_KEY not configured");
-        const submitRes = await fetch("https://api.thehive.ai/api/v2/task/async", {
-          method: "POST",
-          headers: { Authorization: `Token ${key}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ url }),
-        });
-        if (!submitRes.ok) throw new Error(`Hive error: ${submitRes.status}`);
-        const submitData = await submitRes.json();
-        const taskId = submitData?.status?.[0]?.task_id;
-        if (!taskId) throw new Error("No task ID from Hive");
-        // Poll
-        let hiveResult = null;
-        for (let i = 0; i < 15; i++) {
-          await new Promise((r) => setTimeout(r, 2000));
-          const poll = await fetch(`https://api.thehive.ai/api/v2/task/${taskId}`, {
-            headers: { Authorization: `Token ${key}` },
-          });
-          const pollData = await poll.json();
-          if (pollData?.status?.[0]?.status?.code === "completed") { hiveResult = pollData; break; }
-        }
-        if (!hiveResult) throw new Error("Video analysis timed out");
-        type HiveClass = { class: string; score: number };
-        const classes: HiveClass[] = hiveResult?.status?.[0]?.response?.output?.[0]?.classes ?? [];
-        const explicitClasses = ["sexual", "explicit_nudity", "graphic_violence", "very_graphic_violence"];
-        for (const cls of classes) {
-          if (explicitClasses.includes(cls.class) && cls.score > 0.7) {
-            throw new Error("This video contains explicit material and cannot be analyzed.");
-          }
-        }
-        const aiClass = classes.find((c) => c.class === "ai_generated");
-        algorithmScore = clamp((aiClass?.score ?? 0) * 100);
+        throw new Error("Video analysis is not available yet. Please check back soon.");
       } else {
         // image URL
         validateUrl(body.url);

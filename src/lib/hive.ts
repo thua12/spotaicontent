@@ -1,4 +1,4 @@
-const HIVE_BASE_URL = "https://api.thehive.ai/api/v2/task/sync";
+const AIORNOT_BASE_URL = "https://api.aiornot.com/v2/image/sync";
 
 export interface HiveResult {
   aiScore: number;
@@ -7,23 +7,20 @@ export interface HiveResult {
 }
 
 export async function detectImageFromUrl(imageUrl: string): Promise<HiveResult> {
-  const key = process.env.HIVE_API_KEY;
-  if (!key) throw new Error("HIVE_API_KEY is not configured");
-
-  const res = await fetch(HIVE_BASE_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Token ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ url: imageUrl }),
+  // AI or Not only supports file upload — fetch the image ourselves then submit as buffer
+  const imgRes = await fetch(imageUrl, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; SpotAIContent/1.0)" },
+    signal: AbortSignal.timeout(10000),
   });
-
-  if (res.status === 403 || res.status === 401) {
+  if (imgRes.status === 401 || imgRes.status === 403) {
     throw new Error("This image URL is blocking external access. Please download the image and upload it directly instead.");
   }
-  if (!res.ok) throw new Error(`Hive API error: ${res.status}`);
-  return parseHiveResponse(await res.json());
+  if (!imgRes.ok) throw new Error(`Could not fetch image (${imgRes.status}). Try uploading the file directly instead.`);
+
+  const contentType = imgRes.headers.get("content-type") ?? "image/jpeg";
+  const buffer = await imgRes.arrayBuffer();
+  const filename = imageUrl.split("/").pop()?.split("?")[0] ?? "image.jpg";
+  return detectImageFromBuffer(buffer, filename, contentType);
 }
 
 export async function detectImageFromBuffer(
@@ -31,45 +28,51 @@ export async function detectImageFromBuffer(
   filename: string,
   mimeType: string
 ): Promise<HiveResult> {
-  const key = process.env.HIVE_API_KEY;
-  if (!key) throw new Error("HIVE_API_KEY is not configured");
+  const key = process.env.AIORNOT_API_KEY;
+  if (!key) throw new Error("AIORNOT_API_KEY is not configured");
 
   const formData = new FormData();
   formData.append("image", new Blob([buffer], { type: mimeType }), filename);
 
-  const res = await fetch(HIVE_BASE_URL, {
+  const res = await fetch(AIORNOT_BASE_URL, {
     method: "POST",
-    headers: { Authorization: `Token ${key}` },
+    headers: { Authorization: `Bearer ${key}` },
     body: formData,
   });
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    console.error(`Hive buffer upload error ${res.status}:`, body);
+    console.error(`AI or Not error ${res.status}:`, body);
     if (res.status === 401 || res.status === 403) {
-      throw new Error("Image analysis is unavailable (invalid API key). Check HIVE_API_KEY in your environment variables.");
+      throw new Error("Image analysis is unavailable (invalid API key). Check AIORNOT_API_KEY in your environment variables.");
     }
-    throw new Error(`Hive API error: ${res.status}`);
+    throw new Error(`Image analysis error: ${res.status}`);
   }
-  return parseHiveResponse(await res.json());
+
+  const data = await res.json();
+  return parseAiornotResponse(data);
 }
 
-const EXPLICIT_CLASSES = ["sexual", "explicit_nudity", "graphic_violence", "very_graphic_violence"];
-
-function parseHiveResponse(data: Record<string, unknown>): HiveResult {
-  const status = data?.status as Array<{ response?: { output?: Array<{ classes?: Array<{ class: string; score: number }> }> } }>;
-  const classes = status?.[0]?.response?.output?.[0]?.classes ?? [];
+function parseAiornotResponse(data: Record<string, unknown>): HiveResult {
+  const report = data?.report as Record<string, unknown> | undefined;
+  const ai = report?.ai as { is_detected?: boolean; confidence?: number } | undefined;
+  const human = report?.human as { confidence?: number } | undefined;
+  const nsfw = report?.nsfw as { is_detected?: boolean; confidence?: number } | undefined;
 
   // Block explicit content
-  for (const cls of classes) {
-    if (EXPLICIT_CLASSES.includes(cls.class) && cls.score > 0.7) {
-      throw new Error("This content contains explicit material and cannot be analyzed.");
-    }
+  if (nsfw?.is_detected && (nsfw.confidence ?? 0) > 0.7) {
+    throw new Error("This content contains explicit material and cannot be analyzed.");
   }
 
-  const aiClass = classes.find((c) => c.class === "ai_generated");
-  const humanClass = classes.find((c) => c.class === "not_ai_generated");
-  const aiScore = aiClass?.score ?? 0;
-  const humanScore = humanClass?.score ?? 1 - aiScore;
-  return { aiScore, humanScore, classes };
+  const aiScore = ai?.confidence ?? 0;
+  const humanScore = human?.confidence ?? 1 - aiScore;
+
+  return {
+    aiScore,
+    humanScore,
+    classes: [
+      { class: "ai_generated", score: aiScore },
+      { class: "not_ai_generated", score: humanScore },
+    ],
+  };
 }
