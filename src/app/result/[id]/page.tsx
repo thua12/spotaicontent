@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { auth } from "@/auth";
 import { scoreLabel, clamp } from "@/lib/scoring";
+import { scoreExplanation } from "@/lib/score-explanation";
 import { getSection } from "@/lib/sections";
 import SpectrumDisplay from "@/components/SpectrumDisplay";
 import MascotCard from "@/components/MascotCard";
@@ -50,6 +51,8 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
     ? JSON.parse(content.sentences)
     : [];
 
+  const explanation = scoreExplanation(aiScore, content.contentType, sentences.length);
+
   return (
     <div className="min-h-screen bg-paper px-4 py-12">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -82,6 +85,12 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
             Absolute certainty is impossible — this is a probabilistic estimate, not a verdict.
             Human judgment always comes first.
           </div>
+        </div>
+
+        {/* Score explanation */}
+        <div className="bg-card border border-border-warm rounded-card px-6 py-5 shadow-card">
+          <p className="text-xs font-semibold uppercase tracking-widest text-grey mb-2">Why this score?</p>
+          <p className="text-sm text-navy leading-relaxed">{explanation}</p>
         </div>
 
         {/* Mascot */}

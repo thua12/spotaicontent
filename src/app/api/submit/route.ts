@@ -79,7 +79,15 @@ export async function POST(req: NextRequest) {
             headers: { "User-Agent": "Mozilla/5.0 (compatible; SpotAIContent/1.0)" },
             signal: AbortSignal.timeout(10000),
           });
-          if (!res.ok) throw new Error(`Could not fetch URL: ${res.status}`);
+          if (res.status === 401 || res.status === 403) {
+            throw new Error("This article is behind a login or paywall (e.g. NYTimes, Washington Post). Please copy and paste the article text directly instead.");
+          }
+          if (res.status === 429) {
+            throw new Error("This website is blocking our request. Please copy and paste the article text directly instead.");
+          }
+          if (!res.ok) {
+            throw new Error(`Could not fetch this URL (error ${res.status}). Please copy and paste the text directly instead.`);
+          }
           const html = await res.text();
           // Strip HTML tags and collapse whitespace
           text = html
@@ -88,7 +96,7 @@ export async function POST(req: NextRequest) {
             .replace(/<[^>]+>/g, " ")
             .replace(/\s+/g, " ")
             .trim();
-          if (text.length < 50) throw new Error("Not enough readable text found at that URL");
+          if (text.length < 50) throw new Error("Not enough readable text found at this URL — it may be paywalled or require a login. Please paste the article text directly instead.");
         }
         if (text.trim().length < 50)
           return NextResponse.json({ error: "Minimum 50 characters required" }, { status: 400 });
