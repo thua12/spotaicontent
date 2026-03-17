@@ -123,6 +123,22 @@ export async function POST(req: NextRequest) {
         sentences = JSON.stringify(detectionResult.sentences ?? []);
       } else if (type === "video") {
         validateUrl(body.url);
+        // Block platforms that don't allow direct video access
+        const videoHostname = new URL(body.url).hostname.replace("www.", "");
+        const blockedPlatforms: Record<string, string> = {
+          "youtube.com": "YouTube",
+          "youtu.be": "YouTube",
+          "tiktok.com": "TikTok",
+          "instagram.com": "Instagram",
+          "twitter.com": "Twitter/X",
+          "x.com": "Twitter/X",
+          "facebook.com": "Facebook",
+          "fb.watch": "Facebook",
+          "vimeo.com": "Vimeo",
+        };
+        if (blockedPlatforms[videoHostname]) {
+          throw new Error(`${blockedPlatforms[videoHostname]} doesn't allow direct video access. Please upload the video file directly instead.`);
+        }
         url = body.url;
         excerpt = url;
         // Video detection via Hive async
