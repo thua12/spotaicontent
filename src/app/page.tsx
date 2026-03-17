@@ -84,11 +84,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Ad slot — below hero */}
-      <div className="max-w-4xl mx-auto px-4 py-4">
-        <AdSlot slot="homepage-top" size="leaderboard" />
-      </div>
-
       {/* Needs Your Vote Right Now */}
       {needsVotes.length > 0 && (
         <section className="py-12 border-b border-border-warm bg-highlight/20">
