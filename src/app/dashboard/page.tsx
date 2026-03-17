@@ -24,6 +24,7 @@ export default async function DashboardPage() {
       where: { submittedById: userId },
       orderBy: { createdAt: "desc" },
       take: 30,
+      select: { id: true, contentType: true, title: true, excerpt: true, algorithmScore: true, createdAt: true },
     }),
     prisma.vote.findMany({
       where: { userId },
@@ -104,7 +105,7 @@ export default async function DashboardPage() {
                     className="flex items-center gap-4 bg-card border border-border-warm rounded-card px-5 py-4 hover:border-human/40 hover:bg-highlight/20 transition-all group"
                   >
                     <span className="text-grey shrink-0"><ContentTypeIcon type={item.contentType} /></span>
-                    <span className="flex-1 text-sm text-navy truncate">{item.excerpt ?? item.contentType}</span>
+                    <span className="flex-1 text-sm text-navy truncate">{item.title ?? item.excerpt ?? item.contentType}</span>
                     <span className="text-xs font-mono font-semibold shrink-0" style={{ color }}>{score}% AI</span>
                     <span className="text-xs text-grey shrink-0">{scoreLabel(score)}</span>
                     <ArrowRight className="w-3.5 h-3.5 text-grey group-hover:text-human transition-colors shrink-0" />

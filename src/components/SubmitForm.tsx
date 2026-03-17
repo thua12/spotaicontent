@@ -21,9 +21,10 @@ export default function SubmitForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [section, setSection] = useState("general");
+  const [title, setTitle] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const resetInput = () => { setUrl(""); setText(""); setFile(null); setError(null); };
+  const resetInput = () => { setUrl(""); setText(""); setFile(null); setError(null); setTitle(""); };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -48,6 +49,7 @@ export default function SubmitForm() {
         form.append("type", "image");
         form.append("file", file);
         form.append("section", section);
+        if (title.trim()) form.append("title", title.trim());
         res = await fetch("/api/submit", { method: "POST", body: form });
       } else {
         res = await fetch("/api/submit", {
@@ -58,6 +60,7 @@ export default function SubmitForm() {
             url: tab === "text" ? (inputMode === "url" ? url : undefined) : url,
             text: tab === "text" && inputMode === "upload" ? text : undefined,
             section,
+            title: title.trim() || undefined,
           }),
         });
       }
@@ -192,6 +195,18 @@ export default function SubmitForm() {
             <p className="text-xs text-grey mt-1 text-right">{text.length} chars{text.length < 50 && <span className="text-middle"> · {50 - text.length} more needed</span>}</p>
           </div>
         )}
+
+        {/* Optional title */}
+        <div className="mt-4">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={120}
+            placeholder="Title (optional)"
+            className="w-full bg-paper border border-border-warm rounded-btn px-4 py-2.5 text-sm text-navy placeholder:text-grey focus:outline-none focus:border-human transition"
+          />
+        </div>
 
         {session ? (
           <button

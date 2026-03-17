@@ -47,11 +47,14 @@ export async function POST(req: NextRequest) {
     let sentences: string | null = null;
 
     let section = "general";
+    let title: string | null = null;
 
     if (contentType.includes("multipart/form-data")) {
       const form = await req.formData();
       type = form.get("type") as string;
       section = (form.get("section") as string | null) ?? "general";
+      const rawTitle = form.get("title") as string | null;
+      title = rawTitle?.trim().slice(0, 120) || null;
       const file = form.get("file") as File | null;
       if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
       if (file.size > MAX_FILE_SIZE)
@@ -68,6 +71,7 @@ export async function POST(req: NextRequest) {
       type = body.type;
       const rawSection = (body.section ?? "general") as string;
       section = VALID_SECTIONS.has(rawSection) ? rawSection : "general";
+      title = typeof body.title === "string" ? body.title.trim().slice(0, 120) || null : null;
 
       if (type === "text") {
         let text: string = body.text ?? "";
@@ -200,6 +204,7 @@ export async function POST(req: NextRequest) {
         contentType: type,
         url,
         filename,
+        title,
         excerpt,
         algorithmScore,
         sentences,

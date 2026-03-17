@@ -99,11 +99,11 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
         </div>
 
         {/* Content info */}
-        {content.excerpt && (
+        {(content.title || content.excerpt) && (
           <div className="bg-card border border-border-warm rounded-card px-5 py-4 flex items-center gap-3 text-sm shadow-card">
             <ExternalLink className="w-4 h-4 text-grey shrink-0" />
             <span className="text-grey shrink-0 capitalize">{content.contentType}:</span>
-            <span className="text-human truncate font-mono text-xs">{content.excerpt}</span>
+            <span className="text-human truncate font-mono text-xs">{content.title ?? content.excerpt}</span>
           </div>
         )}
 

@@ -56,6 +56,7 @@ model Content {
   contentType    String   // image | video | text
   url            String?
   filename       String?
+  title          String?  // optional user-provided title
   excerpt        String?  // first 300 chars of text, or URL for display
   algorithmScore Int      // 1–99, AI probability (low = human, high = AI)
   sentences      String?  // JSON: [{sentence, generated_prob}]
