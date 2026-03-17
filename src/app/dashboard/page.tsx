@@ -28,7 +28,7 @@ export default async function DashboardPage() {
     }),
     prisma.vote.findMany({
       where: { userId },
-      include: { content: { select: { id: true, contentType: true, excerpt: true, algorithmScore: true, createdAt: true } } },
+      include: { content: { select: { id: true, contentType: true, title: true, excerpt: true, algorithmScore: true, createdAt: true } } },
       orderBy: { createdAt: "desc" },
       take: 30,
     }),
@@ -94,10 +94,11 @@ export default async function DashboardPage() {
               <Link href="/" className="text-sm text-human hover:underline">Check your first piece of content →</Link>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {submittedContent.map((item) => {
                 const score = clamp(item.algorithmScore);
                 const color = scoreColor(score);
+                const label = scoreLabel(score);
                 return (
                   <Link
                     key={item.id}
@@ -105,9 +106,14 @@ export default async function DashboardPage() {
                     className="flex items-center gap-4 bg-card border border-border-warm rounded-card px-5 py-4 hover:border-human/40 hover:bg-highlight/20 transition-all group"
                   >
                     <span className="text-grey shrink-0"><ContentTypeIcon type={item.contentType} /></span>
-                    <span className="flex-1 text-sm text-navy truncate">{item.title ?? item.excerpt ?? item.contentType}</span>
-                    <span className="text-xs font-mono font-semibold shrink-0" style={{ color }}>{score}% AI</span>
-                    <span className="text-xs text-grey shrink-0">{scoreLabel(score)}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-navy truncate">{item.title ?? item.contentType}</p>
+                      <p className="text-xs text-grey mt-0.5">{new Date(item.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-base font-bold font-mono tabular-nums" style={{ color }}>{score}%</p>
+                      <p className="text-xs font-medium" style={{ color }}>{label}</p>
+                    </div>
                     <ArrowRight className="w-3.5 h-3.5 text-grey group-hover:text-human transition-colors shrink-0" />
                   </Link>
                 );
@@ -125,10 +131,11 @@ export default async function DashboardPage() {
               <Link href="/feed" className="text-sm text-human hover:underline">Browse the feed to vote →</Link>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {votes.map((vote) => {
                 const score = clamp(vote.content.algorithmScore);
                 const color = scoreColor(score);
+                const label = scoreLabel(score);
                 return (
                   <Link
                     key={vote.id}
@@ -136,11 +143,17 @@ export default async function DashboardPage() {
                     className="flex items-center gap-4 bg-card border border-border-warm rounded-card px-5 py-4 hover:border-human/40 hover:bg-highlight/20 transition-all group"
                   >
                     <span className="text-grey shrink-0"><ContentTypeIcon type={vote.content.contentType} /></span>
-                    <span className="flex-1 text-sm text-navy truncate">{vote.content.excerpt ?? vote.content.contentType}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-navy truncate">{vote.content.title ?? vote.content.contentType}</p>
+                      <p className="text-xs text-grey mt-0.5">{new Date(vote.content.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</p>
+                    </div>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-highlight text-navy font-medium shrink-0 flex items-center gap-1">
                       <ThumbsUp className="w-3 h-3" /> {vote.verdict}
                     </span>
-                    <span className="text-xs font-mono font-semibold shrink-0" style={{ color }}>{score}% AI</span>
+                    <div className="shrink-0 text-right">
+                      <p className="text-base font-bold font-mono tabular-nums" style={{ color }}>{score}%</p>
+                      <p className="text-xs font-medium" style={{ color }}>{label}</p>
+                    </div>
                     <ArrowRight className="w-3.5 h-3.5 text-grey group-hover:text-human transition-colors shrink-0" />
                   </Link>
                 );

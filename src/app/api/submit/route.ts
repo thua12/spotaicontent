@@ -10,6 +10,52 @@ const VALID_SECTIONS = new Set(["general","news","entertainment","viral","food",
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg","image/png","image/webp","image/gif"]);
 
+function autoTitle(type: string, opts: { filename?: string | null; url?: string | null; text?: string }): string {
+  if (type === "text") {
+    if (opts.url) {
+      try {
+        const u = new URL(opts.url);
+        const slug = u.pathname.split("/").filter(Boolean).pop() ?? "";
+        const readable = slug.replace(/[-_]/g, " ").replace(/\.\w+$/, "").trim();
+        const host = u.hostname.replace("www.", "");
+        if (readable.length > 3) {
+          return readable.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ").slice(0, 80);
+        }
+        return `Article from ${host}`;
+      } catch { return "Article"; }
+    }
+    if (opts.text) {
+      const words = opts.text.trim().split(/\s+/).slice(0, 8).join(" ");
+      return words.length < opts.text.trim().length ? `${words}…` : words;
+    }
+    return "Text";
+  }
+  if (type === "video") {
+    if (opts.url) {
+      try {
+        const host = new URL(opts.url).hostname.replace("www.", "");
+        return `Video from ${host}`;
+      } catch { return "Video"; }
+    }
+    return "Video";
+  }
+  // image
+  if (opts.filename) {
+    const name = opts.filename.replace(/\.[^.]+$/, "").replace(/[-_]/g, " ").trim();
+    return name.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ").slice(0, 80) || "Image";
+  }
+  if (opts.url) {
+    try {
+      const u = new URL(opts.url);
+      const slug = u.pathname.split("/").filter(Boolean).pop() ?? "";
+      const readable = slug.replace(/[-_]/g, " ").replace(/\.\w+$/, "").trim();
+      if (readable.length > 2) return readable.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ").slice(0, 80);
+      return `Image from ${u.hostname.replace("www.", "")}`;
+    } catch { return "Image"; }
+  }
+  return "Image";
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -198,6 +244,8 @@ export async function POST(req: NextRequest) {
         algorithmScore = clamp(result.aiScore * 100);
       }
     }
+
+    if (!title) title = autoTitle(type, { filename, url, text: excerpt ?? undefined });
 
     const record = await prisma.content.create({
       data: {
