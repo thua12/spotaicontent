@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 
 export const CHECK_LIMITS = {
   anonymous: 3,   // per day, by IP
-  free: 10,       // per month, signed-in free users
+  free: 3,        // per month, signed-in free users
   pro: 100,       // per month
   unlimited: Infinity,
 };
@@ -47,37 +47,34 @@ export async function consumeUserCheck(
 
   const limit = tier === "pro" ? CHECK_LIMITS.pro : CHECK_LIMITS.free;
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { checksThisMonth: true, lastCheckReset: true },
-  });
-
-  if (!user) return { allowed: false, checksThisMonth: 0, limit };
-
-  const now = new Date();
-  const lastReset = new Date(user.lastCheckReset);
-  const isNewMonth =
-    now.getFullYear() !== lastReset.getFullYear() ||
-    now.getMonth() !== lastReset.getMonth();
-
-  let checksThisMonth = user.checksThisMonth;
-
-  if (isNewMonth) {
-    checksThisMonth = 0;
-    await prisma.user.update({
+  return prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({
       where: { id: userId },
-      data: { checksThisMonth: 0, lastCheckReset: now },
+      select: { checksThisMonth: true, lastCheckReset: true },
     });
-  }
 
-  if (checksThisMonth >= limit) {
-    return { allowed: false, checksThisMonth, limit };
-  }
+    if (!user) return { allowed: false, checksThisMonth: 0, limit };
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { checksThisMonth: { increment: 1 } },
+    const now = new Date();
+    const lastReset = new Date(user.lastCheckReset);
+    const isNewMonth =
+      now.getFullYear() !== lastReset.getFullYear() ||
+      now.getMonth() !== lastReset.getMonth();
+
+    const checksThisMonth = isNewMonth ? 0 : user.checksThisMonth;
+
+    if (checksThisMonth >= limit) {
+      return { allowed: false, checksThisMonth, limit };
+    }
+
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        checksThisMonth: checksThisMonth + 1,
+        ...(isNewMonth ? { lastCheckReset: now } : {}),
+      },
+    });
+
+    return { allowed: true, checksThisMonth: checksThisMonth + 1, limit };
   });
-
-  return { allowed: true, checksThisMonth: checksThisMonth + 1, limit };
 }

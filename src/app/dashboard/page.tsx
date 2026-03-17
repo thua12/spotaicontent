@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { ArrowRight, FileText, Image as ImageIcon, Film, ThumbsUp } from "lucide-react";
 import { scoreLabel, scoreColor, clamp } from "@/lib/scoring";
 import DeleteContentButton from "@/components/DeleteContentButton";
+import { CHECK_LIMITS } from "@/lib/check-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,7 @@ export default async function DashboardPage() {
   ]);
 
   const tier = (session.user as { tier?: string }).tier ?? "free";
-  const checksLimit = tier === "pro" ? 100 : tier === "unlimited" ? Infinity : 3;
+  const checksLimit = tier === "pro" ? CHECK_LIMITS.pro : tier === "unlimited" ? Infinity : CHECK_LIMITS.free;
   const checksUsed = user?.checksThisMonth ?? 0;
   const checksPct = checksLimit === Infinity ? 0 : Math.min(100, Math.round((checksUsed / (checksLimit as number)) * 100));
 
