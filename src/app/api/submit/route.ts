@@ -15,31 +15,26 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     const userId = session?.user?.id ?? null;
 
-    // ── Freemium gate ──────────────────────────────────────────────────────────
-    if (session?.user?.id) {
-      // Signed-in user — check monthly limit
-      // Determine tier from user role or future subscription field (default free for now)
-      const tier = (session.user as { tier?: string }).tier === "pro" ? "pro"
-        : (session.user as { tier?: string }).tier === "unlimited" ? "unlimited"
-        : "free";
-      const check = await consumeUserCheck(session.user.id, tier);
-      if (!check.allowed) {
-        return NextResponse.json({
-          error: `You've used all ${check.limit} checks this month. Upgrade to Pro for 100 checks/month.`,
-          checksThisMonth: check.checksThisMonth,
-          limit: check.limit,
-          upgrade: "/dashboard/billing",
-        }, { status: 429 });
-      }
-    } else {
-      // Anonymous user — 3/day by IP
-      const allowed = await consumeAnonymousCheck(req);
-      if (!allowed) {
-        return NextResponse.json({
-          error: "You've used your 3 free checks for today. Sign in for 10 free checks/month.",
-          upgrade: "/api/auth/signin",
-        }, { status: 429 });
-      }
+    // ── Auth gate ──────────────────────────────────────────────────────────────
+    if (!session?.user?.id) {
+      return NextResponse.json({
+        error: "Sign in to check content.",
+        upgrade: "/api/auth/signin",
+      }, { status: 401 });
+    }
+
+    // Signed-in user — check monthly limit
+    const tier = (session.user as { tier?: string }).tier === "pro" ? "pro"
+      : (session.user as { tier?: string }).tier === "unlimited" ? "unlimited"
+      : "free";
+    const check = await consumeUserCheck(session.user.id, tier);
+    if (!check.allowed) {
+      return NextResponse.json({
+        error: `You've used all ${check.limit} checks this month. Upgrade to Pro for 100 checks/month.`,
+        checksThisMonth: check.checksThisMonth,
+        limit: check.limit,
+        upgrade: "/dashboard/billing",
+      }, { status: 429 });
     }
     // ── End gate ───────────────────────────────────────────────────────────────
 

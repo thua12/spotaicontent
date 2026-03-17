@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import NextLink from "next/link";
 import { Upload, Link, FileText, Film, Image as ImageIcon, X, Loader2 } from "lucide-react";
 import { SECTIONS } from "@/lib/sections";
+import { useSession } from "next-auth/react";
 
 type Tab = "image" | "video" | "text";
 
 export default function SubmitForm() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [tab, setTab] = useState<Tab>("image");
   const [inputMode, setInputMode] = useState<"upload" | "url">("upload");
   const [url, setUrl] = useState("");
@@ -191,18 +193,27 @@ export default function SubmitForm() {
           </div>
         )}
 
-        <button
-          onClick={handleSubmit}
-          disabled={!canSubmit || loading}
-          className="mt-4 w-full py-3.5 rounded-btn font-semibold text-sm text-white bg-navy hover:bg-navy-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing{tab === "video" ? " (~30s)" : ""}…</> : "Get Second Opinion"}
-        </button>
+        {session ? (
+          <button
+            onClick={handleSubmit}
+            disabled={!canSubmit || loading}
+            className="mt-4 w-full py-3.5 rounded-btn font-semibold text-sm text-white bg-navy hover:bg-navy-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing{tab === "video" ? " (~30s)" : ""}…</> : "Get Second Opinion"}
+          </button>
+        ) : (
+          <NextLink
+            href="/api/auth/signin"
+            className="mt-4 w-full py-3.5 rounded-btn font-semibold text-sm text-white bg-navy hover:bg-navy-light transition-colors flex items-center justify-center gap-2"
+          >
+            Sign in to check content
+          </NextLink>
+        )}
 
         {error && (
           <div className="mt-3 px-4 py-3 rounded-btn bg-red-50 border border-red-200 text-sm text-red-600">
             {error}
-            {error.includes("upgrade") || error.includes("Upgrade") || error.includes("Sign in") ? (
+            {error.includes("upgrade") || error.includes("Upgrade") ? (
               <div className="mt-2">
                 <NextLink href="/dashboard/billing" className="inline-flex px-3 py-1.5 rounded-btn bg-navy text-white text-xs font-semibold hover:bg-navy-light transition-colors">
                   Upgrade to Pro →
@@ -212,9 +223,11 @@ export default function SubmitForm() {
           </div>
         )}
       </div>
-      <p className="text-center text-xs text-grey mt-3">
-        3 free checks/day without signing in · <NextLink href="/api/auth/signin" className="text-human hover:underline">Sign in</NextLink> for 10/month free
-      </p>
+      {!session && (
+        <p className="text-center text-xs text-grey mt-3">
+          <NextLink href="/api/auth/signin" className="text-human hover:underline">Sign in</NextLink> to start checking content
+        </p>
+      )}
     </div>
   );
 }
