@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { ArrowRight, FileText, Image as ImageIcon, Film, ThumbsUp } from "lucide-react";
 import { scoreLabel, scoreColor, clamp } from "@/lib/scoring";
+import DeleteContentButton from "@/components/DeleteContentButton";
 
 export const dynamic = "force-dynamic";
 
@@ -100,22 +101,24 @@ export default async function DashboardPage() {
                 const color = scoreColor(score);
                 const label = scoreLabel(score);
                 return (
-                  <Link
+                  <div
                     key={item.id}
-                    href={`/result/${item.id}`}
-                    className="flex items-center gap-4 bg-card border border-border-warm rounded-card px-5 py-4 hover:border-human/40 hover:bg-highlight/20 transition-all group"
+                    className="flex items-center gap-3 bg-card border border-border-warm rounded-card px-5 py-4 hover:border-human/40 hover:bg-highlight/20 transition-all group"
                   >
-                    <span className="text-grey shrink-0"><ContentTypeIcon type={item.contentType} /></span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-navy truncate">{item.title ?? item.contentType}</p>
-                      <p className="text-xs text-grey mt-0.5">{new Date(item.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-base font-bold font-mono tabular-nums" style={{ color }}>{score}%</p>
-                      <p className="text-xs font-medium" style={{ color }}>{label}</p>
-                    </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-grey group-hover:text-human transition-colors shrink-0" />
-                  </Link>
+                    <Link href={`/result/${item.id}`} className="flex items-center gap-4 flex-1 min-w-0">
+                      <span className="text-grey shrink-0"><ContentTypeIcon type={item.contentType} /></span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-navy truncate">{item.title ?? item.contentType}</p>
+                        <p className="text-xs text-grey mt-0.5">{new Date(item.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</p>
+                      </div>
+                      <div className="shrink-0 text-right mr-1">
+                        <p className="text-base font-bold font-mono tabular-nums" style={{ color }}>{score}%</p>
+                        <p className="text-xs font-medium" style={{ color }}>{label}</p>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-grey group-hover:text-human transition-colors shrink-0" />
+                    </Link>
+                    <DeleteContentButton id={item.id} />
+                  </div>
                 );
               })}
             </div>
