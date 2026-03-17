@@ -44,9 +44,19 @@ export async function detectImageFromBuffer(
   return parseHiveResponse(await res.json());
 }
 
+const EXPLICIT_CLASSES = ["sexual", "explicit_nudity", "graphic_violence", "very_graphic_violence"];
+
 function parseHiveResponse(data: Record<string, unknown>): HiveResult {
   const status = data?.status as Array<{ response?: { output?: Array<{ classes?: Array<{ class: string; score: number }> }> } }>;
   const classes = status?.[0]?.response?.output?.[0]?.classes ?? [];
+
+  // Block explicit content
+  for (const cls of classes) {
+    if (EXPLICIT_CLASSES.includes(cls.class) && cls.score > 0.7) {
+      throw new Error("This content contains explicit material and cannot be analyzed.");
+    }
+  }
+
   const aiClass = classes.find((c) => c.class === "ai_generated");
   const humanClass = classes.find((c) => c.class === "not_ai_generated");
   const aiScore = aiClass?.score ?? 0;

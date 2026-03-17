@@ -166,6 +166,12 @@ export async function POST(req: NextRequest) {
         if (!hiveResult) throw new Error("Video analysis timed out");
         type HiveClass = { class: string; score: number };
         const classes: HiveClass[] = hiveResult?.status?.[0]?.response?.output?.[0]?.classes ?? [];
+        const explicitClasses = ["sexual", "explicit_nudity", "graphic_violence", "very_graphic_violence"];
+        for (const cls of classes) {
+          if (explicitClasses.includes(cls.class) && cls.score > 0.7) {
+            throw new Error("This video contains explicit material and cannot be analyzed.");
+          }
+        }
         const aiClass = classes.find((c) => c.class === "ai_generated");
         algorithmScore = clamp((aiClass?.score ?? 0) * 100);
       } else {
